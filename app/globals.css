@@ -19,8 +19,446 @@
   }
 }
 
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  height: 100%;
 }
+
+/* jedno zjednotené body pravidlo */
+body {
+  background: #020617;                /* tmavé pozadie */
+  color: #f9fafb;                     /* svetlý text */
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+
+  display: flex;                      /* kvôli header-main-footer flex layoutu */
+  flex-direction: column;             /* header hore, footer dole */
+  min-height: 100vh;                  /* telo má aspoň výšku okna */
+}
+
+/* app/globals.css */
+
+/* 1) Základ tela stránky */
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  background-color: #020617;
+  color: #f9fafb;
+}
+
+/* 2) Kontejner */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* 3) Header */
+.main-header {
+  background: #e6375a;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+/* 4) Header obsah */
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0;
+}
+
+/* 5) Logo */
+.logo {
+  font-weight: 700;
+  font-size: 1.25rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+/* 6) Navigácia */
+.main-nav {
+  display: flex;
+  gap: 1rem;
+}
+
+/* 7) Odkazy v navigácii */
+.nav-link {
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #ffeef5;
+}
+
+.nav-link:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* 8) CTA odkaz */
+.nav-link--cta {
+  background: #111827;
+  border-color: transparent;
+}
+
+.nav-link--cta:hover {
+  background: #020617;
+}
+
+/* 9) Obsah stránky */
+.page-content {
+  flex: 1;
+}
+
+/* 10) Footer */
+.main-footer {
+  border-top: 1px solid #1f2937;
+  padding: 1rem 0;
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+
+.hero {
+  padding: 3rem 0 4rem 15rem;
+}
+
+.hero-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 2.5rem;
+  align-items: center;
+}
+
+.hero-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hero-title {
+  margin-top: 1rem;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  line-height: 1.1;
+}
+
+.hero-highlight {
+  color: #f97373;
+}
+
+.hero-subtitle {
+  margin-top: 0.75rem;
+  max-width: 32rem;
+  color: #cbd5f5;
+}
+
+.hero-buttons {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+/* Tlačidlá */
+.btn-primary,
+.btn-secondary,
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 1.3rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border: 1px solid transparent;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #e6375a;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #be123c;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: #f5f7ff;
+  border-color: rgba(148, 163, 184, 0.8);
+}
+
+.btn-secondary:hover {
+  background: rgba(15, 23, 42, 0.7);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #e5e7eb;
+  border-color: transparent;
+}
+
+.btn-ghost:hover {
+  border-color: rgba(148, 163, 184, 0.6);
+}
+
+/* Hero panel */
+.hero-panel {
+  display: flex;
+  justify-content: center;
+}
+
+.hero-card {
+  background: #111827;
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+}
+
+.hero-card-label {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.hero-card-value {
+  margin-top: 0.5rem;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.hero-card-small {
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.hero-card-row {
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+
+.hero-card-foot {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+/* Dashboard */
+.dashboard-header {
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 2rem;
+}
+
+.dashboard-actions {
+  display: grid;
+  gap: 1rem;
+}
+
+.action-card,
+.summary-card {
+  background: #111827;
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+}
+
+.summary-value span {
+  font-weight: 700;
+}
+
+.summary-pnl span {
+  font-weight: 600;
+}
+
+.pnl-positive {
+  color: #22c55e;
+}
+
+.pnl-negative {
+  color: #f97373;
+}
+
+.summary-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.summary-list li {
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Formuláre a zoznam peňaženiek */
+.form-card {
+  background: #111827;
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.form-field input,
+.form-field select {
+  border-radius: 0.5rem;
+  border: 1px solid #4b5563;
+  padding: 0.4rem 0.6rem;
+  background: #020617;
+  color: #f9fafb;
+}
+
+.form-error {
+  color: #f97373;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.wallet-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.wallet-item {
+  background: #0b1120;
+  border-radius: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wallet-name {
+  font-weight: 500;
+}
+
+.wallet-meta {
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.wallet-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-small {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+.wallet-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.wallet-detail-title h1 {
+  margin: 0;
+}
+
+.wallet-detail-title p {
+  margin: 0.25rem 0 0;
+  color: #9ca3af;
+}
+
+.wallet-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.5fr) minmax(0, 1.5fr);
+  gap: 1.5rem;
+}
+
+.wallet-detail-chart {
+  min-height: 200px;
+}
+
+.asset-card {
+  background: #111827;
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+}
+
+.asset-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.asset-form {
+  margin-bottom: 1rem;
+}
+
+.asset-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.asset-row {
+  background: #020617;
+  border-radius: 0.75rem;
+  padding: 0.6rem 0.7rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.asset-row-main {
+  max-width: 70%;
+}
+
+.wallet-link-area {
+  text-decoration: none;
+  color: inherit;
+  flex: 1;
+}
+
+
+/* Responsivita */
+@media (max-width: 768px) {
+  .hero-inner,
+  .dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .header-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .main-nav {
+    flex-wrap: wrap;
+  }
+}
+
+
