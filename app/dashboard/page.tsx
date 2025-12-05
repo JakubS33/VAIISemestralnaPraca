@@ -1,5 +1,5 @@
 // app/dashboard/page.tsx
-
+import Link from "next/link";
 type DemoWallet = {
   id: string;
   name: string;
@@ -8,7 +8,7 @@ type DemoWallet = {
 };
 
 const demoWallets: DemoWallet[] = [
-  { id: "1", name: "Long-term ETF", value: 8600, pnl: 1200 },
+  { id: "1", name: "Long-term ETF", value: 8600.53, pnl: 1200 },
   { id: "2", name: "Crypto DCA", value: 4200, pnl: -300 },
   { id: "3", name: "Cash & savings", value: 2500, pnl: 0 },
 ];
@@ -37,17 +37,17 @@ export default function DashboardPage() {
           <div className="action-card">
             <h2>Check my wallets</h2>
             <p>See all your virtual wallets with current value and P/L.</p>
-            <a href="/wallets" className="btn-primary">
+            <Link href="/wallets" className="btn-primary">
               Go to wallets
-            </a>
+            </Link>
           </div>
 
           <div className="action-card">
             <h2>Add a new wallet</h2>
             <p>Create a separate wallet for crypto, ETFs or savings.</p>
-            <a href="/wallets" className="btn-secondary">
+            <Link href="/wallets" className="btn-secondary">
               Add wallet
-            </a>
+            </Link>
           </div>
 
           <div className="action-card">
@@ -55,9 +55,9 @@ export default function DashboardPage() {
             <p>
               Combine investments, cash and other assets to see your net worth.
             </p>
-            <a href="/wallets" className="btn-ghost">
+            <Link href="/wallets" className="btn-ghost">
               Open detailed view
-            </a>
+            </Link>
           </div>
         </div>
 
@@ -70,7 +70,7 @@ export default function DashboardPage() {
               <span>
                 €
                 {totalValue.toLocaleString("sk-SK", {
-                  maximumFractionDigits: 0,
+                  maximumFractionDigits: 2,
                 })}
               </span>
             </p>
@@ -81,7 +81,7 @@ export default function DashboardPage() {
                 €
                 {totalPnL.toLocaleString("sk-SK", {
                   signDisplay: "always",
-                  maximumFractionDigits: 0,
+                  maximumFractionDigits: 2,
                 })}
               </span>
             </p>
@@ -93,7 +93,7 @@ export default function DashboardPage() {
                   <span>
                     €
                     {w.value.toLocaleString("sk-SK", {
-                      maximumFractionDigits: 0,
+                      maximumFractionDigits: 2,
                     })}
                   </span>
                 </li>
@@ -101,7 +101,7 @@ export default function DashboardPage() {
             </ul>
 
             <p className="summary-foot">
-              Values are demo data – later you can connect DB &amp; APIs.
+              Values are demo data – later there will be connected DB & APIs.
             </p>
           </div>
         </aside>

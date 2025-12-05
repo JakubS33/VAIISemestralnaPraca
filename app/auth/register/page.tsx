@@ -4,7 +4,7 @@
 import { useState } from "react";
 
 export default function RegisterPage() {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState("@");
   const [pwd, setPwd] = useState("");
   const [pwd2, setPwd2] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +31,7 @@ export default function RegisterPage() {
 
   return (
     <section>
-      <h1>Create account</h1>
+      <h1 style={{ padding: "1rem 0", fontSize: "2.25rem" }}>Create account</h1>
       <form onSubmit={handleSubmit} className="form-card">
         {error && <p className="form-error">{error}</p>}
 

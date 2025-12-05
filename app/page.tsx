@@ -9,7 +9,7 @@ export default function HomePage() {
           <span className="hero-badge">My Finance Hub</span>
 
           <h1 className="hero-title">
-            One place for your <span className="hero-highlight">real</span>{" "}
+            One place for your <span style={{ color: "#f97373" }}>real</span>{" "}
             financial picture.
           </h1>
 
