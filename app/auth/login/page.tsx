@@ -11,7 +11,7 @@ export default function LoginPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    // veľmi jednoduchá KLIENTSKA validácia
+    
     if (!email.includes("@")) {
       setError("Please enter a valid email address.");
       return;
@@ -27,7 +27,7 @@ export default function LoginPage() {
 
   return (
     <section>
-      <h1>Sign in</h1>
+      <h1 style = {{padding: "1rem 0"}}>Sign in</h1>
       <form onSubmit={handleSubmit} className="form-card">
         {error && <p className="form-error">{error}</p>}
 
@@ -50,6 +50,8 @@ export default function LoginPage() {
             required
           />
         </label>
+
+        
 
         <button type="submit" className="btn-primary">
           Sign in

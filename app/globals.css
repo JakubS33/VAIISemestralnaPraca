@@ -58,7 +58,7 @@ body {
 .main-header {
   background: #e6375a;
   color: #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  box-shadow: 0px 0px 90px rgba(228, 4, 194, 0.25);
 }
 
 
@@ -98,7 +98,7 @@ body {
   border-color: rgba(255, 255, 255, 0.6);
 }
 
-/* 8) CTA odkaz */
+
 .nav-link--cta {
   background: #111827;
   border-color: transparent;
@@ -108,12 +108,12 @@ body {
   background: #020617;
 }
 
-/* 9) Obsah stránky */
+
 .page-content {
   flex: 1;
 }
 
-/* 10) Footer */
+
 .main-footer {
   border-top: 1px solid #1f2937;
   padding: 1rem 0;
@@ -121,7 +121,7 @@ body {
   color: #9ca3af;
 }
 
-/* Hero (landing) */
+
 .hero {
   padding: 3rem 0 4rem;
 }
@@ -164,7 +164,7 @@ body {
   gap: 0.75rem;
 }
 
-/* Tlačidlá */
+
 .btn-primary,
 .btn-secondary,
 .btn-ghost {
@@ -212,7 +212,7 @@ body {
   border-color: rgba(148, 163, 184, 0.6);
 }
 
-/* Hero panel */
+
 .hero-panel {
   display: flex;
   justify-content: center;
@@ -254,7 +254,7 @@ body {
   color: #9ca3af;
 }
 
-/* Dashboard */
+
 .dashboard-header {
   margin-bottom: 1.5rem;
 }
@@ -307,12 +307,13 @@ body {
   justify-content: space-between;
 }
 
-/* Formuláre a zoznam peňaženiek */
+
 .form-card {
   background: #111827;
   border-radius: 1rem;
   padding: 1.25rem 1.5rem;
   margin-bottom: 1.5rem;
+  
 }
 
 .form-field {
@@ -394,6 +395,8 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1.5fr) minmax(0, 1.5fr);
   gap: 1.5rem;
+  
+  
 }
 
 .wallet-detail-chart {
@@ -404,7 +407,7 @@ body {
   background: #111827;
   border-radius: 1rem;
   padding: 1.25rem 1.5rem;
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 18px 45px rgba(238, 5, 141, 0.35);
 }
 
 .asset-card-header {
@@ -443,7 +446,7 @@ body {
 }
 
 
-/* Responsivita */
+
 @media (max-width: 768px) {
   .hero-inner,
   .dashboard-grid {

@@ -85,20 +85,23 @@ export default function DashboardPage() {
                 })}
               </span>
             </p>
-
+           
             <ul className="summary-list">
-              {demoWallets.map((w) => (
-                <li key={w.id}>
-                  <span>{w.name}</span>
-                  <span>
-                    €
-                    {w.value.toLocaleString("sk-SK", {
-                      maximumFractionDigits: 2,
-                    })}
-                  </span>
-                </li>
-              ))}
+                {demoWallets.map((w) => (
+                  <li key={w.id} >
+                    <span>{w.name}</span>
+                    <span> 
+                      €
+                      {w.value.toLocaleString("sk-SK", {
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
+
+                  </li>
+                ))}
             </ul>
+
+            
 
             <p className="summary-foot">
               Values are demo data – later there will be connected DB & APIs.

@@ -112,7 +112,9 @@ export default function WalletsPage() {
       <h1>My wallets</h1>
 
       <form onSubmit={handleSubmit} className="form-card">
-        <h2>{editingId ? "Edit wallet" : "Create new wallet"}</h2>
+        <h2 style = {{marginBottom: "1.5rem", fontSize: "1.5rem"}}>
+          {editingId ? "Edit wallet" : "Create new wallet"}
+        </h2>
 
         {error && <p className="form-error">{error}</p>}
 
@@ -152,7 +154,7 @@ export default function WalletsPage() {
         <ul className="wallet-list">
           {wallets.map((w) => (
             <li key={w.id} className="wallet-item">
-              {/* kliknutím na názov sa preklikneš na detail */}
+              
               <Link href={`/wallets/${w.id}`} className="wallet-link-area">
                 <div>
                   <div className="wallet-name">{w.name}</div>

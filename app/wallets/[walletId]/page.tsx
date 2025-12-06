@@ -22,7 +22,7 @@ interface Asset {
   value: number;
 }
 
-// jednoduchý zoznam „hlavných“ assetov na výber
+
 const MAIN_ASSET_OPTIONS = [
   { id: "BTC", name: "Bitcoin (BTC)", unitPrice: 50000 },
   { id: "SP500", name: "S&P 500 ETF", unitPrice: 400 },
@@ -30,10 +30,9 @@ const MAIN_ASSET_OPTIONS = [
 ];
 
 export default function WalletDetailPage() {
-  // ID peňaženky berieme priamo z URL pomocou useParams
-  const params = useParams<{ walletId?: string; walletID?: string }>();
-  const walletId = (params.walletId ?? params.walletID ?? "").toString();
-
+ 
+  const params = useParams<{ walletId?: string}>();
+  const walletId = (params.walletId ?? "").toString();
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,19 +40,19 @@ export default function WalletDetailPage() {
   const [mainAssets, setMainAssets] = useState<Asset[]>([]);
   const [otherAssets, setOtherAssets] = useState<Asset[]>([]);
 
-  // formulár MAIN assets
+  
   const [selectedMainId, setSelectedMainId] = useState<string>(
     MAIN_ASSET_OPTIONS[0]?.id ?? ""
   );
   const [mainAmount, setMainAmount] = useState("");
   const [editingMainId, setEditingMainId] = useState<string | null>(null);
 
-  // formulár OTHER assets
+  
   const [otherName, setOtherName] = useState("");
   const [otherValue, setOtherValue] = useState("");
   const [editingOtherId, setEditingOtherId] = useState<string | null>(null);
 
-  // načítanie info o peňaženke + assetoch
+  
   useEffect(() => {
     if (!walletId) {
       setError("Missing wallet id in URL.");
@@ -76,8 +75,6 @@ export default function WalletDetailPage() {
 
         const found = wallets.find((w) => w.id === walletId);
 
-        // ak peňaženku v API nenájdeme (napr. po reštarte dev servera),
-        // použijeme jednoduchý fallback podľa ID z URL
         setWallet(
           found ?? {
             id: walletId,
@@ -99,7 +96,7 @@ export default function WalletDetailPage() {
     load();
   }, [walletId]);
 
-  // pomocná funkcia – nájdenie unit price pre main asset
+  
   function getUnitPriceForMain(id: string): number {
     const opt = MAIN_ASSET_OPTIONS.find((o) => o.id === id);
     return opt?.unitPrice ?? 1;
@@ -258,7 +255,7 @@ export default function WalletDetailPage() {
 
   function startEditMain(asset: Asset) {
     setEditingMainId(asset.id);
-    setSelectedMainId(asset.name); // u nás je name = BTC/SP500...
+    setSelectedMainId(asset.name); 
     setMainAmount(asset.amount?.toString() ?? "");
   }
 
@@ -272,7 +269,7 @@ export default function WalletDetailPage() {
     return <p>Loading wallet...</p>;
   }
 
-  // fallback, keby náhodou wallet ešte nebola nastavená
+  
   const displayWallet: Wallet = wallet ?? {
     id: walletId || "unknown",
     name: walletId ? `Wallet #${walletId}` : "Unknown wallet",
