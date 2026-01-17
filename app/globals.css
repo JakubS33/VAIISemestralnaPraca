@@ -395,7 +395,7 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1.5fr) minmax(0, 1.5fr);
   gap: 1.5rem;
-  
+
   
 }
 

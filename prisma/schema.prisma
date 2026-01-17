@@ -1,0 +1,119 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TransactionType {
+  BUY
+  SELL
+}
+
+enum OtherEntryType {
+  PLUS
+  MINUS
+}
+
+enum AssetType {
+  CRYPTO
+  STOCK
+  ETF
+  CASH
+}
+
+enum WalletAssetKind {
+  MAIN
+  OTHER
+}
+
+model User {
+  id       String  @id @default(cuid())
+  email    String  @unique
+  password String
+
+  wallets  Wallet[]
+}
+
+model Wallet {
+  id       String  @id @default(cuid())
+  name     String
+  currency String  @default("EUR")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  transactions Transaction[]
+  otherEntries OtherEntry[]
+  walletAssets WalletAsset[]
+}
+
+model Asset {
+  id        String    @id @default(cuid())
+  symbol    String
+  apiId     String
+  type      AssetType
+  name      String
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  transactions Transaction[]
+
+  @@unique([symbol, type])
+  @@unique([apiId, type])
+}
+
+model Transaction {
+  id          String @id @default(cuid())
+
+  walletId    String
+  wallet      Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  assetId     String
+  asset       Asset  @relation(fields: [assetId], references: [id], onDelete: Restrict)
+
+  quantity    Decimal @db.Decimal(18, 8)
+  pricePerUnit Decimal? @db.Decimal(18, 8) // odporúčané (cena v čase transakcie)
+  type        TransactionType
+  date        DateTime
+  note        String?
+}
+
+model OtherEntry {
+  id        String @id @default(cuid())
+
+  walletId  String
+  wallet    Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  amount    Decimal @db.Decimal(18, 2)
+  date      DateTime
+  note      String?
+  type      OtherEntryType
+}
+
+model WalletAsset {
+  id       String @id @default(cuid())
+
+  walletId String
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  kind     WalletAssetKind
+  name     String
+  amount   Decimal? @db.Decimal(18, 8) // len pre MAIN
+  value    Decimal  @db.Decimal(18, 2) // v mene peňaženky, môže byť aj záporné pre OTHER
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
