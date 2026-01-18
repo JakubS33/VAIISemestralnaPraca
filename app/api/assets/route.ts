@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUserIdFromRequestCookies } from "@/lib/auth";
 
 type AssetKind = "main" | "other";
 
@@ -12,13 +13,32 @@ function parseNumber(value: unknown): number | null {
   return null;
 }
 
+async function requireUserId() {
+  const userId = await getUserIdFromRequestCookies();
+  return userId;
+}
+
 // GET /api/assets?walletId=...
 export async function GET(req: Request) {
+  const userId = await requireUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
   const walletId = searchParams.get("walletId");
-
   if (!walletId) {
     return NextResponse.json({ error: "Missing walletId" }, { status: 400 });
+  }
+
+  // ✅ Over, že wallet patrí userovi
+  const wallet = await prisma.wallet.findFirst({
+    where: { id: walletId, userId },
+    select: { id: true },
+  });
+
+  if (!wallet) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const data = await prisma.walletAsset.findMany({
@@ -26,20 +46,25 @@ export async function GET(req: Request) {
     orderBy: { createdAt: "desc" },
   });
 
-  const out = data.map((a) => ({
-    id: a.id,
-    walletId: a.walletId,
-    kind: a.kind === "MAIN" ? "main" : "other",
-    name: a.name,
-    amount: a.amount ? Number(a.amount) : undefined,
-    value: Number(a.value),
-  }));
-
-  return NextResponse.json(out);
+  return NextResponse.json(
+    data.map((a) => ({
+      id: a.id,
+      walletId: a.walletId,
+      kind: a.kind === "MAIN" ? "main" : "other",
+      name: a.name,
+      amount: a.amount ? Number(a.amount) : undefined,
+      value: Number(a.value),
+    }))
+  );
 }
 
 // POST /api/assets
 export async function POST(req: Request) {
+  const userId = await requireUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = await req.json().catch(() => ({} as any));
 
   const walletId = (body.walletId ?? "").toString().trim();
@@ -52,9 +77,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing walletId" }, { status: 400 });
   }
 
-  const walletExists = await prisma.wallet.findUnique({ where: { id: walletId } });
-  if (!walletExists) {
-    return NextResponse.json({ error: "Wallet not found" }, { status: 404 });
+  // ✅ Over, že wallet patrí userovi
+  const wallet = await prisma.wallet.findFirst({
+    where: { id: walletId, userId },
+    select: { id: true },
+  });
+
+  if (!wallet) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   if (!name || name.length < 2) {
@@ -106,9 +136,13 @@ export async function POST(req: Request) {
 
 // PUT /api/assets?id=...
 export async function PUT(req: Request) {
+  const userId = await requireUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
-
   if (!id) {
     return NextResponse.json({ error: "Missing id" }, { status: 400 });
   }
@@ -118,9 +152,24 @@ export async function PUT(req: Request) {
   const rawAmount = body.amount;
   const rawValue = body.value;
 
-  const existing = await prisma.walletAsset.findUnique({ where: { id } });
+  // ✅ Načítaj asset + walletId
+  const existing = await prisma.walletAsset.findUnique({
+    where: { id },
+    select: { id: true, walletId: true, kind: true, amount: true },
+  });
+
   if (!existing) {
     return NextResponse.json({ error: "Asset not found" }, { status: 404 });
+  }
+
+  // ✅ Over, že wallet patrí userovi
+  const wallet = await prisma.wallet.findFirst({
+    where: { id: existing.walletId, userId },
+    select: { id: true },
+  });
+
+  if (!wallet) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   if (!name || name.length < 2) {
@@ -167,17 +216,37 @@ export async function PUT(req: Request) {
 
 // DELETE /api/assets?id=...
 export async function DELETE(req: Request) {
+  const userId = await requireUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
-
   if (!id) {
     return NextResponse.json({ error: "Missing id" }, { status: 400 });
   }
 
-  try {
-    await prisma.walletAsset.delete({ where: { id } });
-    return NextResponse.json({ ok: true });
-  } catch {
+  // ✅ Načítaj asset + walletId
+  const existing = await prisma.walletAsset.findUnique({
+    where: { id },
+    select: { id: true, walletId: true },
+  });
+
+  if (!existing) {
     return NextResponse.json({ error: "Asset not found" }, { status: 404 });
   }
+
+  // ✅ Over, že wallet patrí userovi
+  const wallet = await prisma.wallet.findFirst({
+    where: { id: existing.walletId, userId },
+    select: { id: true },
+  });
+
+  if (!wallet) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  await prisma.walletAsset.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
 }

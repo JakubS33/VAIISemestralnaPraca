@@ -1,51 +1,68 @@
-// app/api/wallets/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { cookies } from "next/headers";
+import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
 
 function safeTrim(v: unknown) {
-  return (typeof v === "string" ? v : "").trim();
+  return (v ?? "").toString().trim();
+}
+
+async function getUserIdOr401() {
+  const store = await cookies();
+  const token = store.get(SESSION_COOKIE_NAME)?.value;
+  if (!token) return null;
+
+  const userId = verifySessionToken(token);
+  return userId;
 }
 
 // READ – GET /api/wallets
 export async function GET() {
-  const data = await prisma.wallet.findMany({
-    orderBy: { createdAt: "desc" },
+  const userId = await getUserIdOr401();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const wallets = await prisma.wallet.findMany({
+    where: { userId },
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      name: true,
+      // ak si currency ešte nemáš v modeli Wallet, daj preč
+      currency: true,
+      createdAt: true,
+    },
   });
-  return NextResponse.json(data);
+
+  return NextResponse.json(wallets);
 }
 
 // CREATE – POST /api/wallets
-// Dočasne: userId berieme z body (kým nemáš auth).
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => ({} as any));
+  const userId = await getUserIdOr401();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  const userId = safeTrim(body.userId);
+  const body = await req.json().catch(() => ({} as any));
   const name = safeTrim(body.name);
   const currency = safeTrim(body.currency);
 
-  if (!userId) {
-    return NextResponse.json({ error: "userId is required." }, { status: 400 });
-  }
   if (!name || name.length < 3) {
     return NextResponse.json(
       { error: "Name must have at least 3 characters." },
       { status: 400 }
     );
   }
-  if (!currency) {
-    return NextResponse.json(
-      { error: "Currency is required." },
-      { status: 400 }
-    );
-  }
 
-  const userExists = await prisma.user.findUnique({ where: { id: userId } });
-  if (!userExists) {
-    return NextResponse.json({ error: "User not found." }, { status: 404 });
+  if (!currency) {
+    return NextResponse.json({ error: "Currency is required." }, { status: 400 });
   }
 
   const created = await prisma.wallet.create({
     data: { userId, name, currency },
+    select: { id: true, name: true, currency: true, createdAt: true },
   });
 
   return NextResponse.json(created, { status: 201 });
@@ -53,9 +70,13 @@ export async function POST(req: Request) {
 
 // UPDATE – PUT /api/wallets?id=...
 export async function PUT(req: Request) {
+  const userId = await getUserIdOr401();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
-
   if (!id) {
     return NextResponse.json({ error: "Missing id" }, { status: 400 });
   }
@@ -70,37 +91,53 @@ export async function PUT(req: Request) {
       { status: 400 }
     );
   }
+
   if (!currency) {
-    return NextResponse.json(
-      { error: "Currency is required." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Currency is required." }, { status: 400 });
   }
 
-  try {
-    const updated = await prisma.wallet.update({
-      where: { id },
-      data: { name, currency },
-    });
-    return NextResponse.json(updated);
-  } catch {
-    return NextResponse.json({ error: "Wallet not found" }, { status: 404 });
+  // ✅ over vlastnictvo
+  const wallet = await prisma.wallet.findFirst({
+    where: { id, userId },
+    select: { id: true },
+  });
+
+  if (!wallet) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  const updated = await prisma.wallet.update({
+    where: { id },
+    data: { name, currency },
+    select: { id: true, name: true, currency: true, createdAt: true },
+  });
+
+  return NextResponse.json(updated);
 }
 
 // DELETE – DELETE /api/wallets?id=...
 export async function DELETE(req: Request) {
+  const userId = await getUserIdOr401();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
-
   if (!id) {
     return NextResponse.json({ error: "Missing id" }, { status: 400 });
   }
 
-  try {
-    await prisma.wallet.delete({ where: { id } });
-    return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: "Wallet not found" }, { status: 404 });
+  // ✅ over vlastnictvo
+  const wallet = await prisma.wallet.findFirst({
+    where: { id, userId },
+    select: { id: true },
+  });
+
+  if (!wallet) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  await prisma.wallet.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
 }

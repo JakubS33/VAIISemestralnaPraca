@@ -384,6 +384,9 @@ body {
 
 .wallet-detail-title h1 {
   margin: 0;
+  color: #9ca3af;
+  font-weight: 600;
+  font-size: large;
 }
 
 .wallet-detail-title p {

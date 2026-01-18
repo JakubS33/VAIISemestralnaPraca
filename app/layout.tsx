@@ -1,18 +1,30 @@
 // app/layout.tsx
+// app/layout.tsx
 import type { Metadata } from "next";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import "./globals.css";
+
+import { prisma } from "@/lib/prisma";
+import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+import { LogoutButton } from "@/app/components/LogoutButton";
 
 export const metadata: Metadata = {
   title: "My Finance Hub",
   description: "Simple way to see your real financial picture",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const token = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
+  const userId = token ? verifySessionToken(token) : null;
+  const user = userId
+    ? await prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
+    : null;
+
   return (
     <html lang="sk">
       <body>
@@ -29,9 +41,18 @@ export default function RootLayout({
               <Link href="/wallets" className="nav-link">
                 Wallets
               </Link>
-              <Link href="/auth/login" className="nav-link nav-link--cta">
-                Sign in
-              </Link>
+              {user ? (
+                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                  <span className="nav-link" style={{ opacity: 0.85 }}>
+                    {user.email}
+                  </span>
+                  <LogoutButton />
+                </div>
+              ) : (
+                <Link href="/auth/login" className="nav-link nav-link--cta">
+                  Sign in
+                </Link>
+              )}
             </nav>
           </div>
         </header>
