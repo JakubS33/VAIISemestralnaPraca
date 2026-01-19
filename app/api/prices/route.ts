@@ -54,8 +54,7 @@ async function fetchTwelveDataQuote(symbols: string[], vs: VsCurrency): Promise<
   const apiKey = process.env.TWELVEDATA_API_KEY;
   if (!apiKey) return map;
 
-  // Twelve Data free plan has limits; we keep it simple: one request with comma-separated symbols.
-  // If their API returns only one symbol per call, user can reduce the list or adjust.
+  // ✅ correct endpoint
   const url = new URL("https://api.twelvedata.com/quote");
   url.searchParams.set("symbol", symbols.join(","));
   url.searchParams.set("apikey", apiKey);
@@ -64,40 +63,50 @@ async function fetchTwelveDataQuote(symbols: string[], vs: VsCurrency): Promise<
     headers: { accept: "application/json" },
     next: { revalidate: 60 },
   });
-  if (!r.ok) return map;
 
-  const json = await r.json();
+  const json = await r.json().catch(() => null);
 
-  // Common formats:
-  // 1) single quote: { symbol: "AAPL", close: "..." }
-  // 2) batch: { data: [ { symbol: "AAPL", close: "..." }, ... ] }
-  // 3) batch map: { AAPL: { close: "..." }, MSFT: { close: "..." } }
-  const push = (sym: string, raw: any) => {
+  // ✅ ak TwelveData vracia error, uvidíš to v konzole (server log)
+  if (!r.ok || (json && typeof json === "object" && (json as any).status === "error")) {
+    console.error("[twelvedata] error", {
+      status: r.status,
+      body: json,
+      url: url.toString().slice(0, 200) + "...",
+    });
+    return map;
+  }
+
+  const getPrice = (row: any) => {
+    const raw = row?.close ?? row?.price ?? row?.last ?? row?.previous_close;
     const v = Number(raw);
-    if (Number.isFinite(v)) map.set(sym, v);
+    return Number.isFinite(v) ? v : null;
   };
 
-  if (json && typeof json === "object" && "symbol" in json) {
-    push(String((json as any).symbol), (json as any).close ?? (json as any).price ?? (json as any).last);
-  } else if (json && typeof json === "object" && Array.isArray((json as any).data)) {
-    for (const row of (json as any).data) {
-      if (!row) continue;
-      push(String(row.symbol), row.close ?? row.price ?? row.last);
-    }
-  } else if (json && typeof json === "object") {
+  // Formát 1: single
+  if (json && typeof json === "object" && "symbol" in (json as any)) {
+    const sym = String((json as any).symbol);
+    const p = getPrice(json);
+    if (p !== null) map.set(sym, p);
+    void vs;
+    return map;
+  }
+
+  // Formát 2: batch map { AAPL: {...}, MSFT: {...} }
+  if (json && typeof json === "object") {
     for (const sym of symbols) {
       const row = (json as any)[sym];
       if (!row) continue;
-      push(sym, row.close ?? row.price ?? row.last);
+      const p = getPrice(row);
+      if (p !== null) map.set(sym, p);
     }
   }
 
-  // NOTE: TwelveData typically returns prices in the instrument currency (often USD).
-  // For this project we assume wallets are EUR or USD and show the quote as-is.
-  // If you later want strict conversion, you can add FX endpoint here.
   void vs;
   return map;
 }
+
+
+
 
 // GET /api/prices?assetIds=id1,id2&vs=eur
 export async function GET(req: Request) {

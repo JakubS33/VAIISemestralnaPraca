@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { WalletValueChart } from "./WalletValueChart";
+import { WalletValueChart, type WalletSnapshotRow } from "./WalletValueChart";
 
 type Wallet = { id: string; name: string; currency: string };
 
@@ -53,7 +53,9 @@ export default function WalletOverviewClient({ walletId }: { walletId: string })
   // MAIN assets už NEŤAHÁME z /assets?kind=MAIN – vyrátame ich z transactions.
   const [otherAssets, setOtherAssets] = useState<WalletAsset[]>([]);
   const [transactions, setTransactions] = useState<WalletTx[]>([]);
+  const [snapshots, setSnapshots] = useState<WalletSnapshotRow[]>([]);
   const [prices, setPrices] = useState<Record<string, number>>({}); // Asset.id -> price
+  
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -145,6 +147,18 @@ export default function WalletOverviewClient({ walletId }: { walletId: string })
 
     const txs = t.ok ? ((await t.json()) as WalletTx[]) : [];
     setTransactions(txs);
+
+    // snapshots for chart (server may auto-create daily snapshot if older than 1 day)
+    const s = await fetch(`/api/wallets/${encodeURIComponent(walletId)}/snapshots?limit=500`, {
+      cache: "no-store",
+      credentials: "include",
+    });
+    if (s.status === 401) {
+      window.location.href = "/auth/login";
+      return;
+    }
+    const snaps = s.ok ? ((await s.json()) as WalletSnapshotRow[]) : [];
+    setSnapshots(snaps);
 
     // OTHER assets (môžu zostať v WalletAsset tabulke)
     const o = await fetch(`/api/wallets/${encodeURIComponent(walletId)}/assets?kind=OTHER`, {
@@ -364,7 +378,7 @@ export default function WalletOverviewClient({ walletId }: { walletId: string })
       <div className="wallet-detail-grid">
         {/* CHART */}
         <div className="wallet-detail-chart">
-          <WalletValueChart transactions={transactions} currency={displayWallet.currency} totalPL={totalPL} />
+          <WalletValueChart snapshots={snapshots} currency={displayWallet.currency} totalPL={totalPL} />
         </div>
 
         {/* MAIN ASSETS (derived from transactions) */}

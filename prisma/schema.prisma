@@ -41,10 +41,17 @@ enum WalletAssetKind {
   OTHER
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
 model User {
   id       String  @id @default(cuid())
   email    String  @unique
   password String
+
+  role     Role    @default(USER)
 
   wallets  Wallet[]
 }
@@ -63,6 +70,25 @@ model Wallet {
   transactions Transaction[]
   otherEntries OtherEntry[]
   walletAssets WalletAsset[]
+  snapshots WalletSnapshot[]
+}
+
+model WalletSnapshot {
+  id        String   @id @default(cuid())
+
+  walletId  String
+  wallet    Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  // Snapshot value in wallet currency at snapshot creation time (based on live prices).
+  value     Decimal  @db.Decimal(18, 2)
+  currency  String
+
+  // Why was the snapshot created (e.g. after TX add/delete, or daily refresh).
+  reason    String
+
+  createdAt DateTime @default(now())
+
+  @@index([walletId, createdAt])
 }
 
 model Asset {

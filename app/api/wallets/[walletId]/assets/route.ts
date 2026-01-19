@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
 import { WalletAssetKind } from "@prisma/client";
+import { createWalletSnapshot } from "@/lib/walletSnapshots";
 
 type Ctx = { params: Promise<{ walletId: string }> };
 
@@ -173,6 +174,14 @@ export async function POST(req: Request, ctx: Ctx) {
 
     return updatedOrCreated;
   });
+
+  // After a BUY transaction is created, store a wallet value snapshot based on live prices.
+  // This is used by the wallet value chart.
+  try {
+    await createWalletSnapshot(walletId, "TX_ADD");
+  } catch (e) {
+    console.error("[snapshot] TX_ADD failed", e);
+  }
 
   // zachováme pôvodné response správanie (updated = 200, created = 201 by bolo fajn,
   // ale kvôli jednoduchosti vraciame 200)

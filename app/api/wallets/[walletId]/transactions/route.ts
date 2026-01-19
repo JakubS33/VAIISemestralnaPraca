@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+import { createWalletSnapshot } from "@/lib/walletSnapshots";
 
 async function getUserIdOr401() {
   const store = await cookies();
@@ -104,5 +105,14 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ walletId: st
   if (!txRow) return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
 
   await prisma.transaction.delete({ where: { id } });
+
+  // After removing a transaction, store a new wallet value snapshot.
+  // (best-effort: snapshot failures shouldn't break the delete)
+  try {
+    await createWalletSnapshot(walletId, "TX_DELETE");
+  } catch (e) {
+    console.error("[snapshot] TX_DELETE failed", e);
+  }
+
   return NextResponse.json({ ok: true });
 }

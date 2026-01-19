@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+import { ensureDailyWalletSnapshot } from "@/lib/walletSnapshots";
 
 type Ctx = { params: Promise<{ walletId: string }> };
 
@@ -27,6 +28,11 @@ export async function GET(_req: Request, ctx: Ctx) {
   });
 
   if (!wallet) return NextResponse.json({ error: "Wallet not found" }, { status: 404 });
+
+  // If the last snapshot is older than today, create a new daily snapshot.
+  // This runs when the wallet detail is opened.
+  await ensureDailyWalletSnapshot(walletId);
+
   return NextResponse.json(wallet);
 }
 

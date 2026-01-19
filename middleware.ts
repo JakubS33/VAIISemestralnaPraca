@@ -23,7 +23,25 @@ export async function middleware(req: NextRequest) {
   }
 
   try {
-    await jwtVerify(token, enc.encode(secret));
+    const { payload } = await jwtVerify(token, enc.encode(secret));
+
+    const role = payload?.role === "ADMIN" ? "ADMIN" : "USER";
+    const path = req.nextUrl.pathname;
+
+    // /admin je iba pre ADMIN
+    if (path.startsWith("/admin") && role !== "ADMIN") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
+
+    // admin nech nechodi do user časti
+    if ((path.startsWith("/wallets") || path.startsWith("/dashboard")) && role === "ADMIN") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/admin";
+      return NextResponse.redirect(url);
+    }
+
     return NextResponse.next();
   } catch {
     const url = req.nextUrl.clone();
@@ -33,5 +51,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/wallets/:path*", "/dashboard/:path*"],
+  matcher: ["/wallets/:path*", "/dashboard/:path*", "/admin/:path*"],
 };
