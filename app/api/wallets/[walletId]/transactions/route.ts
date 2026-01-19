@@ -86,6 +86,15 @@ export async function PUT(req: Request, ctx: { params: Promise<{ walletId: strin
     select: { id: true },
   });
 
+  // After editing a transaction, store a new wallet snapshot so both
+  // wallet-detail chart and analytics time series update immediately.
+  // (best-effort: snapshot failures shouldn't break the edit)
+  try {
+    await createWalletSnapshot(walletId, "TX_EDIT");
+  } catch (e) {
+    console.error("[snapshot] TX_EDIT failed", e);
+  }
+
   return NextResponse.json(updated);
 }
 

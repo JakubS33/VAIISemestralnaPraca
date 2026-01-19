@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { SESSION_COOKIE_NAME, verifySessionPayload } from "@/lib/auth";
+import { ensureDailyWalletSnapshot } from "@/lib/walletSnapshots";
 
 type VsCurrency = "eur" | "usd";
 
@@ -131,6 +132,19 @@ export async function GET(req: Request) {
 
   const walletIds = wallets.map((w) => w.id);
 
+  // Ensure each wallet has an up-to-date daily snapshot so the analytics chart
+  // gets a point for "today" even when the user hasn't edited anything in > 1 day.
+  // Best-effort: if pricing APIs fail, we still want analytics to render.
+  await Promise.all(
+    walletIds.map(async (id) => {
+      try {
+        await ensureDailyWalletSnapshot(id);
+      } catch (e) {
+        console.error("[snapshot] ensureDailyWalletSnapshot failed", { walletId: id, e });
+      }
+    })
+  );
+
   // 2) transactions (MAIN assets)
   const txs = await prisma.transaction.findMany({
     where: { walletId: { in: walletIds } },
@@ -149,7 +163,7 @@ export async function GET(req: Request) {
     select: { value: true },
   });
 
-  // 4) holdings + invested
+  // 4) holdings + invested (cost basis len z BUY na assetoch)
   const holdings = new Map<string, number>(); // assetId -> qty
   let invested = 0;
 
@@ -227,44 +241,45 @@ export async function GET(req: Request) {
   }, 0);
 
   const currentTotalValue = mainValue + otherValue;
-  const overallPL = currentTotalValue - (invested + 0); // invested je cost basis len z BUY; OTHER tu nemá cost basis
 
- // 7) timeSeries zo snapshotov: berieme POSLEDNY snapshot za den pre kazdu wallet
-const from = new Date();
-from.setDate(from.getDate() - 60);
+  // ✅ FIX: P/L len z assetov (mainValue - invested), OTHER sa do P/L nezapocitava
+  const overallPL = mainValue - invested;
 
-const snaps = await prisma.walletSnapshot.findMany({
-  where: { walletId: { in: walletIds }, createdAt: { gte: from } },
-  select: { walletId: true, value: true, createdAt: true },
-  orderBy: [{ walletId: "asc" }, { createdAt: "asc" }],
-});
+  // 7) timeSeries zo snapshotov: berieme POSLEDNY snapshot za den pre kazdu wallet
+  const from = new Date();
+  from.setDate(from.getDate() - 60);
 
-// 7a) wallet+day -> last snapshot value
-const lastByWalletDay = new Map<string, number>(); // key = `${walletId}|${dayKey}`
+  const snaps = await prisma.walletSnapshot.findMany({
+    where: { walletId: { in: walletIds }, createdAt: { gte: from } },
+    select: { walletId: true, value: true, createdAt: true },
+    orderBy: [{ walletId: "asc" }, { createdAt: "asc" }],
+  });
 
-for (const s of snaps) {
-  const v = Number(s.value);
-  if (!Number.isFinite(v)) continue;
-  const dayKey = utcDayKey(s.createdAt);
-  const key = `${s.walletId}|${dayKey}`;
+  // 7a) wallet+day -> last snapshot value
+  const lastByWalletDay = new Map<string, number>(); // key = `${walletId}|${dayKey}`
 
-  // kedze ideme ASC, posledny zapis pre dany key bude najnovsi snapshot v ten den
-  lastByWalletDay.set(key, v);
-}
+  for (const s of snaps) {
+    const v = Number(s.value);
+    if (!Number.isFinite(v)) continue;
+    const dayKey = utcDayKey(s.createdAt);
+    const key = `${s.walletId}|${dayKey}`;
 
-// 7b) day -> sum(last snapshots across wallets)
-const seriesMap = new Map<string, number>();
+    // kedze ideme ASC, posledny zapis pre dany key bude najnovsi snapshot v ten den
+    lastByWalletDay.set(key, v);
+  }
 
-for (const [key, val] of lastByWalletDay.entries()) {
-  const dayKey = key.split("|")[1];
-  seriesMap.set(dayKey, (seriesMap.get(dayKey) ?? 0) + val);
-}
+  // 7b) day -> sum(last snapshots across wallets)
+  const seriesMap = new Map<string, number>();
 
-const timeSeries = Array.from(seriesMap.entries()).map(([dayKey, value]) => ({
-  date: dayKey,
-  value: Number(value.toFixed(2)),
-}));
+  for (const [key, val] of lastByWalletDay.entries()) {
+    const dayKey = key.split("|")[1];
+    seriesMap.set(dayKey, (seriesMap.get(dayKey) ?? 0) + val);
+  }
 
+  const timeSeries = Array.from(seriesMap.entries()).map(([dayKey, value]) => ({
+    date: dayKey,
+    value: Number(value.toFixed(2)),
+  }));
 
   return NextResponse.json({
     vs,
