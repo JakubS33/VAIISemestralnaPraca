@@ -40,6 +40,28 @@ export async function GET(req: Request, ctx: Ctx) {
   const items = await prisma.walletAsset.findMany({
     where: { walletId, kind },
     orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      walletId: true,
+      kind: true,
+      name: true,
+      amount: true,
+      value: true,
+      createdAt: true,
+      updatedAt: true,
+      assetId: true,
+      asset: {
+        select: {
+          id: true,
+          type: true,
+          symbol: true,
+          name: true,
+          provider: true,
+          apiId: true,
+          exchange: true,
+        },
+      },
+    },
   });
 
   return NextResponse.json(items);
@@ -60,34 +82,122 @@ export async function POST(req: Request, ctx: Ctx) {
   const body = await req.json().catch(() => ({}));
 
   const kind = (body?.kind === "OTHER" ? "OTHER" : "MAIN") as WalletAssetKind;
-  const name = typeof body?.name === "string" ? body.name.trim() : "";
-
-  const amountRaw = body?.amount;
-  const valueRaw = body?.value;
-
-  const amountNum = amountRaw === null || amountRaw === undefined ? null : Number(amountRaw);
-  const valueNum = Number(valueRaw);
-
-  if (name.length < 2) return NextResponse.json({ error: "Názov je povinný" }, { status: 400 });
-  if (!Number.isFinite(valueNum)) return NextResponse.json({ error: "Neplatná hodnota value" }, { status: 400 });
 
   if (kind === "MAIN") {
-    if (amountNum === null || !Number.isFinite(amountNum)) {
-      return NextResponse.json({ error: "Pre MAIN musíš zadať amount" }, { status: 400 });
-    }
+  const assetId = typeof body?.assetId === "string" ? body.assetId.trim() : "";
+  const amountNum = Number(body?.amount);
+  const pricePerUnitNum = Number(body?.pricePerUnit);
+
+  if (!assetId) return NextResponse.json({ error: "Missing assetId" }, { status: 400 });
+  if (!Number.isFinite(amountNum) || amountNum <= 0) {
+    return NextResponse.json({ error: "Amount must be a positive number" }, { status: 400 });
   }
+  if (!Number.isFinite(pricePerUnitNum) || pricePerUnitNum <= 0) {
+    return NextResponse.json({ error: "Purchase price must be a positive number" }, { status: 400 });
+  }
+
+  const asset = await prisma.asset.findUnique({
+    where: { id: assetId },
+    select: { id: true, symbol: true, name: true, type: true, provider: true, apiId: true },
+  });
+  if (!asset) return NextResponse.json({ error: "Asset not found" }, { status: 404 });
+  if (!asset.apiId || asset.provider === "MANUAL") {
+    return NextResponse.json({ error: "Asset is not price-enabled" }, { status: 400 });
+  }
+
+  const now = new Date();
+
+  const result = await prisma.$transaction(async (tx) => {
+    // Merge behavior: if the same asset already exists in wallet -> add to amount.
+    const existing = await tx.walletAsset.findFirst({
+      where: { walletId, kind: "MAIN", assetId: asset.id },
+      select: { id: true, amount: true },
+    });
+
+    const updatedOrCreated = existing
+      ? await tx.walletAsset.update({
+          where: { id: existing.id },
+          data: {
+            amount: (Number(existing.amount ?? "0") + amountNum).toString(),
+            name: asset.symbol,
+          },
+          select: {
+            id: true,
+            walletId: true,
+            kind: true,
+            name: true,
+            amount: true,
+            value: true,
+            assetId: true,
+            asset: {
+              select: { id: true, type: true, symbol: true, name: true, provider: true, apiId: true, exchange: true },
+            },
+          },
+        })
+      : await tx.walletAsset.create({
+          data: {
+            walletId,
+            kind: "MAIN",
+            name: asset.symbol,
+            assetId: asset.id,
+            amount: amountNum.toString(),
+            value: "0",
+          },
+          select: {
+            id: true,
+            walletId: true,
+            kind: true,
+            name: true,
+            amount: true,
+            value: true,
+            assetId: true,
+            asset: {
+              select: { id: true, type: true, symbol: true, name: true, provider: true, apiId: true, exchange: true },
+            },
+          },
+        });
+
+    // ✅ Create BUY transaction
+    await tx.transaction.create({
+      data: {
+        walletId,
+        assetId: asset.id,
+        quantity: amountNum.toString(),
+        pricePerUnit: pricePerUnitNum.toString(),
+        type: "BUY",
+        date: now,
+        note: "Add asset",
+      },
+      select: { id: true }, // nemusíš vracať celý objekt
+    });
+
+    return updatedOrCreated;
+  });
+
+  // zachováme pôvodné response správanie (updated = 200, created = 201 by bolo fajn,
+  // ale kvôli jednoduchosti vraciame 200)
+  return NextResponse.json(result, { status: 200 });
+}
+
+
+  // OTHER
+  const name = typeof body?.name === "string" ? body.name.trim() : "";
+  const valueNum = Number(body?.value);
+  if (name.length < 2) return NextResponse.json({ error: "Názov je povinný" }, { status: 400 });
+  if (!Number.isFinite(valueNum)) return NextResponse.json({ error: "Neplatná hodnota value" }, { status: 400 });
 
   const created = await prisma.walletAsset.create({
     data: {
       walletId,
-      kind,
+      kind: "OTHER",
       name,
-      amount: kind === "MAIN" ? amountNum!.toString() : null,
+      amount: null,
       value: valueNum.toString(),
+      assetId: null,
     },
   });
 
-  return NextResponse.json(created);
+  return NextResponse.json(created, { status: 201 });
 }
 
 export async function DELETE(req: Request, ctx: Ctx) {

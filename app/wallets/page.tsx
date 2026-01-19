@@ -86,7 +86,7 @@ export default function WalletsPage() {
   }
 
   async function deleteWallet(id: string) {
-    if (!confirm("Naozaj zmazať peňaženku?")) return;
+    if (!confirm("Do you really want to delete your wallet?")) return;
     setError(null);
     try {
       const r = await fetch(`/api/wallets?id=${encodeURIComponent(id)}`, {
@@ -131,7 +131,7 @@ export default function WalletsPage() {
 
   async function saveEdit(id: string) {
   if (editName.trim().length < 3) {
-    setError("Názov musí mať aspoň 3 znaky.");
+    setError("The name must have at least 3 characters.");
     return;
   }
 
@@ -199,7 +199,6 @@ export default function WalletsPage() {
           >
             <option value="EUR">EUR</option>
             <option value="USD">USD</option>
-            <option value="CZK">CZK</option>
           </select>
 
           <button
@@ -266,7 +265,6 @@ export default function WalletsPage() {
                         >
                           <option value="EUR">EUR</option>
                           <option value="USD">USD</option>
-                          <option value="CZK">CZK</option>
                         </select>
                       </div>
                     )}

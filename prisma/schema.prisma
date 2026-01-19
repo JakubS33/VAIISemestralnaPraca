@@ -30,6 +30,12 @@ enum AssetType {
   CASH
 }
 
+enum PriceProvider {
+  COINGECKO
+  TWELVEDATA
+  MANUAL
+}
+
 enum WalletAssetKind {
   MAIN
   OTHER
@@ -62,17 +68,27 @@ model Wallet {
 model Asset {
   id        String    @id @default(cuid())
   symbol    String
-  apiId     String
   type      AssetType
   name      String
+
+  // Which external service is used to fetch live price.
+  // - COINGECKO: apiId = CoinGecko coin id (e.g. "bitcoin")
+  // - TWELVEDATA: apiId = provider symbol (e.g. "AAPL")
+  provider  PriceProvider @default(MANUAL)
+  apiId     String?
+
+  // Optional exchange hint (useful for stocks/ETFs). EU exchanges omitted for now.
+  exchange  String?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
   transactions Transaction[]
-
-  @@unique([symbol, type])
-  @@unique([apiId, type])
+  walletAssets WalletAsset[]
+  
+  @@index([type, symbol])
+  @@index([type, name])
+  @@unique([provider, apiId, type])
 }
 
 model Transaction {
@@ -110,10 +126,17 @@ model WalletAsset {
   wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   kind     WalletAssetKind
+  // For MAIN this is a display label (usually Asset.symbol). For OTHER it's a free-form label.
   name     String
+
+  // MAIN assets reference the global asset catalog.
+  assetId  String?
+  asset    Asset? @relation(fields: [assetId], references: [id], onDelete: Restrict)
   amount   Decimal? @db.Decimal(18, 8) // len pre MAIN
   value    Decimal  @db.Decimal(18, 2) // v mene peňaženky, môže byť aj záporné pre OTHER
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([walletId, assetId, kind])
 }

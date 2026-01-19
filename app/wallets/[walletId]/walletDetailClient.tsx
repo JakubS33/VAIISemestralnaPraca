@@ -148,7 +148,7 @@ export default function WalletDetailClient({ walletId }: { walletId: string }) {
             />
           </div>
 
-          <div style={{ display: "grid", gap: 6 }}>
+          <div style={{ isplay: "grid", gap: 6 }}>
             <label>Mena</label>
             <select
               value={currency}
