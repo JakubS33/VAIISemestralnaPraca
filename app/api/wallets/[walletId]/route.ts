@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
-import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+import { SESSION_COOKIE_NAME, verifySessionPayload } from "@/lib/auth";
 import { ensureDailyWalletSnapshot } from "@/lib/walletSnapshots";
 
 type Ctx = { params: Promise<{ walletId: string }> };
@@ -10,17 +10,19 @@ async function getUserId() {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
-  try {
-    return verifySessionToken(token);
-  } catch {
-    return null;
-  }
+
+  const sess = verifySessionPayload(token);
+  if (!sess) return null;
+  // Admin je iba na správu databázy (users/assets) – nesmie používať wallet endpointy.
+  if (sess.role === "ADMIN") return "__FORBIDDEN_ADMIN__";
+  return sess.userId;
 }
 
 export async function GET(_req: Request, ctx: Ctx) {
   const { walletId } = await ctx.params;
 
   const userId = await getUserId();
+  if (userId === "__FORBIDDEN_ADMIN__") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const wallet = await prisma.wallet.findFirst({
@@ -40,6 +42,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
   const { walletId } = await ctx.params;
 
   const userId = await getUserId();
+  if (userId === "__FORBIDDEN_ADMIN__") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
@@ -71,6 +74,7 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   const { walletId } = await ctx.params;
 
   const userId = await getUserId();
+  if (userId === "__FORBIDDEN_ADMIN__") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const exists = await prisma.wallet.findFirst({

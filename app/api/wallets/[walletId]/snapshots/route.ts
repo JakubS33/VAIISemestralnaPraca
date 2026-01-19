@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
-import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+import { SESSION_COOKIE_NAME, verifySessionPayload } from "@/lib/auth";
 import { ensureDailyWalletSnapshot } from "@/lib/walletSnapshots";
 
 type Ctx = { params: Promise<{ walletId: string }> };
@@ -10,17 +10,17 @@ async function getUserId() {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
-  try {
-    return verifySessionToken(token);
-  } catch {
-    return null;
-  }
+  const sess = verifySessionPayload(token);
+  if (!sess) return null;
+  if (sess.role === "ADMIN") return "__FORBIDDEN_ADMIN__";
+  return sess.userId;
 }
 
 // GET /api/wallets/[walletId]/snapshots
 // Returns wallet value snapshots for the chart.
 export async function GET(req: Request, ctx: Ctx) {
   const userId = await getUserId();
+  if (userId === "__FORBIDDEN_ADMIN__") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { walletId } = await ctx.params;

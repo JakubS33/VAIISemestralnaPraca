@@ -55,7 +55,7 @@ export default function WalletOverviewClient({ walletId }: { walletId: string })
   const [transactions, setTransactions] = useState<WalletTx[]>([]);
   const [snapshots, setSnapshots] = useState<WalletSnapshotRow[]>([]);
   const [prices, setPrices] = useState<Record<string, number>>({}); // Asset.id -> price
-  
+
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

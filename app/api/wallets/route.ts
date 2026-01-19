@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
-import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+import { SESSION_COOKIE_NAME, verifySessionPayload } from "@/lib/auth";
 
 function safeTrim(v: unknown) {
   return (v ?? "").toString().trim();
@@ -12,13 +12,19 @@ async function getUserIdOr401() {
   const token = store.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
 
-  const userId = verifySessionToken(token);
-  return userId;
+  const sess = verifySessionPayload(token);
+  if (!sess) return null;
+  // Admin je iba na správu databázy (users/assets) – nesmie používať wallet endpointy.
+  if (sess.role === "ADMIN") return "__FORBIDDEN_ADMIN__";
+  return sess.userId;
 }
 
 // READ – GET /api/wallets
 export async function GET() {
   const userId = await getUserIdOr401();
+  if (userId === "__FORBIDDEN_ADMIN__") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -41,6 +47,9 @@ export async function GET() {
 // CREATE – POST /api/wallets
 export async function POST(req: Request) {
   const userId = await getUserIdOr401();
+  if (userId === "__FORBIDDEN_ADMIN__") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -71,6 +80,9 @@ export async function POST(req: Request) {
 // UPDATE – PUT /api/wallets?id=...
 export async function PUT(req: Request) {
   const userId = await getUserIdOr401();
+  if (userId === "__FORBIDDEN_ADMIN__") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -118,6 +130,9 @@ export async function PUT(req: Request) {
 // DELETE – DELETE /api/wallets?id=...
 export async function DELETE(req: Request) {
   const userId = await getUserIdOr401();
+  if (userId === "__FORBIDDEN_ADMIN__") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
-import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+import { SESSION_COOKIE_NAME, verifySessionPayload } from "@/lib/auth";
 import { createWalletSnapshot } from "@/lib/walletSnapshots";
 
 async function getUserIdOr401() {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
-  return verifySessionToken(token);
+  const sess = verifySessionPayload(token);
+  if (!sess) return null;
+  if (sess.role === "ADMIN") return "__FORBIDDEN_ADMIN__";
+  return sess.userId;
 }
 
 function safeNum(v: any) {
@@ -18,6 +21,7 @@ function safeNum(v: any) {
 
 export async function GET(req: Request, ctx: { params: Promise<{ walletId: string }> }) {
   const userId = await getUserIdOr401();
+  if (userId === "__FORBIDDEN_ADMIN__") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { walletId } = await ctx.params;
@@ -47,6 +51,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ walletId: strin
 // UPDATE – PUT /api/wallets/[walletId]/transactions?id=...
 export async function PUT(req: Request, ctx: { params: Promise<{ walletId: string }> }) {
   const userId = await getUserIdOr401();
+  if (userId === "__FORBIDDEN_ADMIN__") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { walletId } = await ctx.params;
@@ -87,6 +92,7 @@ export async function PUT(req: Request, ctx: { params: Promise<{ walletId: strin
 // DELETE – DELETE /api/wallets/[walletId]/transactions?id=...
 export async function DELETE(req: Request, ctx: { params: Promise<{ walletId: string }> }) {
   const userId = await getUserIdOr401();
+  if (userId === "__FORBIDDEN_ADMIN__") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { walletId } = await ctx.params;

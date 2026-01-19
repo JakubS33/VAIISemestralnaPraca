@@ -25,10 +25,10 @@ export async function POST(req: Request) {
   const hash = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
     data: { email, password: hash },
-    select: { id: true, email: true },
+    select: { id: true, email: true, role: true },
   });
 
-  const token = signSessionToken(user.id);
+  const token = signSessionToken(user.id, user.role);
 
   const res = NextResponse.json({ ok: true, user });
   res.cookies.set(SESSION_COOKIE_NAME, token, {

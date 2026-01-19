@@ -33,7 +33,8 @@ export default function LoginPage() {
       }
 
       // ✅ cookie je HttpOnly → nevidíš ho v JS, ale browser ho uloží
-      router.replace("/wallets");
+      if (j?.role === "ADMIN") router.replace("/admin");
+      else router.replace("/wallets");
       router.refresh();
     } finally {
       setLoading(false);

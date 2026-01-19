@@ -14,7 +14,7 @@ export async function GET() {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true },
+    select: { id: true, email: true, role: true },
   });
 
   return NextResponse.json({ user: user ?? null });

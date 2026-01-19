@@ -177,18 +177,18 @@ export default function WalletsPage() {
         <h1 style={{ fontSize: 28, fontWeight: 700 }}>Wallets</h1>
 
         <Link href="/dashboard" style={{ textDecoration: "underline" }}>
-          Späť na dashboard
+          Back to dashboard
         </Link>
       </div>
 
       <div style={{ marginTop: 18, padding: 16, border: "1px solid #333", borderRadius: 12 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 600 }}>Pridať peňaženku</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 600 }}>Add wallet</h2>
 
         <form onSubmit={createWallet} style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Názov (min. 3 znaky)"
+            placeholder="Name (at least 3 characters)"
             style={{ padding: 10, borderRadius: 8, border: "1px solid #333", minWidth: 240 }}
           />
 
@@ -249,7 +249,7 @@ export default function WalletsPage() {
                     {!isEditing ? (
                       <>
                         <div style={{ fontWeight: 700, fontSize: 16 }}>{w.name}</div>
-                        <div style={{ opacity: 0.8, marginTop: 2 }}>Mena: {w.currency}</div>
+                        <div style={{ opacity: 0.8, marginTop: 2 }}>Currency: {w.currency}</div>
                       </>
                     ) : (
                       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
@@ -280,9 +280,10 @@ export default function WalletsPage() {
                             borderRadius: 8,
                             border: "1px solid #333",
                             textDecoration: "none",
+                            color: "#d7143e",
                           }}
                         >
-                          Detail
+                          Open
                         </Link>
 
                         <button

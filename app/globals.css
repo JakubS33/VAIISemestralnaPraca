@@ -257,6 +257,8 @@ body {
 
 .dashboard-header {
   margin-bottom: 1.5rem;
+  margin-top: 1rem;
+  font-size: 1.25rem;
 }
 
 .dashboard-grid {

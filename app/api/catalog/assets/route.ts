@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
-import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+import { SESSION_COOKIE_NAME, verifySessionPayload } from "@/lib/auth";
 
 function safeTrim(v: unknown) {
   return (v ?? "").toString().trim();
@@ -11,16 +11,16 @@ async function getUserIdOr401() {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
-  try {
-    return verifySessionToken(token);
-  } catch {
-    return null;
-  }
+  const sess = verifySessionPayload(token);
+  if (!sess) return null;
+  if (sess.role === "ADMIN") return "__FORBIDDEN_ADMIN__";
+  return sess.userId;
 }
 
 // GET /api/catalog/assets?q=btc&types=CRYPTO,ETF,STOCK
 export async function GET(req: Request) {
   const userId = await getUserIdOr401();
+  if (userId === "__FORBIDDEN_ADMIN__") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);

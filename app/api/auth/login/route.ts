@@ -24,7 +24,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
   }
 
-  const token = signSessionToken(user.id);
+  // Dôležité: do tokenu musí ísť aj rola, inak sa ADMIN správa ako USER.
+  const token = signSessionToken(user.id, user.role);
 
   const res = NextResponse.json({ ok: true });
   res.cookies.set(SESSION_COOKIE_NAME, token, {

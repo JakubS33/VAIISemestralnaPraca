@@ -27,7 +27,7 @@ export default function DashboardPage() {
       <div className="dashboard-header">
         <h1>Welcome back</h1>
         <p>
-          Here is a quick summary of your virtual portfolio. Manage your
+          Manage your
           wallets, add new assets and check your overall status.
         </p>
       </div>
@@ -43,20 +43,18 @@ export default function DashboardPage() {
           </div>
 
           <div className="action-card">
-            <h2>Add a new wallet</h2>
-            <p>Create a separate wallet for crypto, ETFs or savings.</p>
-            <Link href="/wallets" className="btn-secondary">
-              Add wallet
+            <h2>Charts & insights</h2>
+            <p>See charts for your portfolio and wallets.</p>
+            <Link href="/analytics" className="btn-secondary">
+              Open analytics
             </Link>
           </div>
 
           <div className="action-card">
-            <h2>See overall status</h2>
-            <p>
-              Combine investments, cash and other assets to see your net worth.
-            </p>
-            <Link href="/wallets" className="btn-ghost">
-              Open detailed view
+            <h2>Account settings</h2>
+            <p>Update your email or password.</p>
+            <Link href="/account" className="btn-secondary">
+              Edit account
             </Link>
           </div>
         </div>
