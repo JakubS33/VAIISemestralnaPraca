@@ -23,6 +23,13 @@ export default function TransactionsClient({ walletId }: { walletId: string }) {
   const [editQty, setEditQty] = useState("");
   const [editPrice, setEditPrice] = useState("");
 
+  // add state (NEW)
+  const [adding, setAdding] = useState(false);
+  const [addType, setAddType] = useState<"BUY" | "SELL">("BUY");
+  const [addAssetId, setAddAssetId] = useState("");
+  const [addQty, setAddQty] = useState("");
+  const [addPrice, setAddPrice] = useState("");
+
   const norm = (s: string) => s.replace(/\s+/g, "").replace(",", ".");
 
   async function load() {
@@ -39,7 +46,8 @@ export default function TransactionsClient({ walletId }: { walletId: string }) {
       return;
     }
     if (!r.ok) {
-      setError("Nepodarilo sa načítať transakcie.");
+      const j = await r.json().catch(() => ({}));
+      setError(j?.error ?? "Nepodarilo sa načítať transakcie.");
       setLoading(false);
       return;
     }
@@ -51,9 +59,11 @@ export default function TransactionsClient({ walletId }: { walletId: string }) {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [walletId]);
 
   function startEdit(t: Tx) {
+    setError(null);
     setEditingId(t.id);
     setEditQty(String(t.quantity ?? ""));
     setEditPrice(String(t.pricePerUnit ?? ""));
@@ -76,12 +86,15 @@ export default function TransactionsClient({ walletId }: { walletId: string }) {
 
     setError(null);
 
-    const r = await fetch(`/api/wallets/${encodeURIComponent(walletId)}/transactions?id=${encodeURIComponent(editingId)}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ quantity: q, pricePerUnit: p }),
-    });
+    const r = await fetch(
+      `/api/wallets/${encodeURIComponent(walletId)}/transactions?id=${encodeURIComponent(editingId)}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ quantity: q, pricePerUnit: p }),
+      }
+    );
 
     if (r.status === 401) {
       window.location.href = "/auth/login";
@@ -118,6 +131,65 @@ export default function TransactionsClient({ walletId }: { walletId: string }) {
     setTxs((p) => p.filter((x) => x.id !== id));
   }
 
+  // NEW: create transaction via POST
+  async function createTx(e: React.FormEvent) {
+    e.preventDefault();
+    if (adding) return;
+
+    const assetId = addAssetId.trim();
+    const q = Number(norm(addQty));
+    const p = Number(norm(addPrice));
+
+    if (!assetId) {
+      setError("AssetId je povinné");
+      return;
+    }
+    if (!Number.isFinite(q) || q <= 0) {
+      setError("Quantity musí byť > 0");
+      return;
+    }
+    if (!Number.isFinite(p) || p <= 0) {
+      setError("Price per unit musí byť > 0");
+      return;
+    }
+
+    setError(null);
+    setAdding(true);
+
+    const r = await fetch(`/api/wallets/${encodeURIComponent(walletId)}/transactions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        type: addType,
+        assetId,
+        quantity: q,
+        pricePerUnit: p,
+        date: new Date().toISOString(),
+      }),
+    });
+
+    setAdding(false);
+
+    if (r.status === 401) {
+      window.location.href = "/auth/login";
+      return;
+    }
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}));
+      setError(j?.error ?? "Create zlyhal");
+      return;
+    }
+
+    // reset form
+    setAddAssetId("");
+    setAddQty("");
+    setAddPrice("");
+    setAddType("BUY");
+
+    await load();
+  }
+
   const rows = useMemo(() => {
     return txs.slice().sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [txs]);
@@ -134,6 +206,55 @@ export default function TransactionsClient({ walletId }: { walletId: string }) {
 
       {error && <p style={{ color: "tomato", marginTop: 10 }}>{error}</p>}
 
+      {/* NEW: Add transaction */}
+      <div style={{ marginTop: 18, border: "1px solid #333", borderRadius: 12, padding: 14 }}>
+        <div style={{ fontWeight: 700, marginBottom: 10 }}>Add transaction</div>
+
+        <form onSubmit={createTx} style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <select
+            value={addType}
+            onChange={(e) => setAddType(e.target.value as "BUY" | "SELL")}
+            style={{ padding: 10, borderRadius: 8, border: "1px solid #333" }}
+          >
+            <option value="BUY">BUY</option>
+            <option value="SELL">SELL</option>
+          </select>
+
+          <input
+            value={addAssetId}
+            onChange={(e) => setAddAssetId(e.target.value)}
+            placeholder="Asset ID (from DB)"
+            style={{ padding: 10, borderRadius: 8, border: "1px solid #333", minWidth: 240 }}
+          />
+
+          <input
+            value={addQty}
+            onChange={(e) => setAddQty(e.target.value)}
+            placeholder="Quantity"
+            style={{ padding: 10, borderRadius: 8, border: "1px solid #333", minWidth: 160 }}
+          />
+
+          <input
+            value={addPrice}
+            onChange={(e) => setAddPrice(e.target.value)}
+            placeholder="Price per unit"
+            style={{ padding: 10, borderRadius: 8, border: "1px solid #333", minWidth: 160 }}
+          />
+
+          <button
+            type="submit"
+            disabled={adding}
+            style={{ border: "1px solid #333", borderRadius: 8, padding: "10px 14px", cursor: "pointer" }}
+          >
+            {adding ? "Saving..." : "Add"}
+          </button>
+        </form>
+
+        <div style={{ opacity: 0.8, marginTop: 8, fontSize: 13 }}>
+          Tip: Asset ID nájdeš v DB (Prisma Studio) alebo si ho vyberáš pri “Add asset” v detaile walletu.
+        </div>
+      </div>
+
       {loading ? (
         <p style={{ marginTop: 18 }}>Loading...</p>
       ) : rows.length === 0 ? (
@@ -149,9 +270,7 @@ export default function TransactionsClient({ walletId }: { walletId: string }) {
                     <div style={{ fontWeight: 700 }}>
                       {t.type} — {t.asset?.symbol ?? "???"} ({t.asset?.name ?? ""})
                     </div>
-                    <div style={{ opacity: 0.8, marginTop: 2 }}>
-                      {new Date(t.date).toLocaleString("sk-SK")}
-                    </div>
+                    <div style={{ opacity: 0.8, marginTop: 2 }}>{new Date(t.date).toLocaleString("sk-SK")}</div>
                   </div>
 
                   <div style={{ display: "flex", gap: 10 }}>

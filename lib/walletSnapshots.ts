@@ -161,7 +161,7 @@ async function computeWalletValueLive(walletId: string): Promise<{ value: number
   return { value, currency: wallet.currency, pricedAssetCount };
 }
 
-export async function createWalletSnapshot(walletId: string, reason: "TX_ADD" | "TX_DELETE" | "EOD" | "TX_EDIT") {
+export async function createWalletSnapshot(walletId: string, reason: "TX_ADD" | "TX_DELETE" | "EOD" | "TX_EDIT" | "TX_CREATE") {
   const { value, currency, pricedAssetCount } = await computeWalletValueLive(walletId);
 
   // If nothing could be priced (e.g. missing API ids), we still write 0 snapshot to keep timeline consistent.
