@@ -19,8 +19,16 @@ export default function DashboardPage() {
   return (
     <section className="dashboard">
       <div className="dashboard-header">
-        <h1>Welcome back</h1>
-        <p>Manage your wallets, add new assets and check your overall status.</p>
+        <h1 style={{fontSize: 30}}>Welcome back</h1>
+        <p>
+            <span style={{ color: "red" }}>Manage </span>
+             your wallets, 
+             <span style={{ color: "red" }}> add </span> 
+             new assets and 
+             <span style={{ color: "red" }}> check </span>
+             your overall status.
+          
+        </p>
       </div>
 
       <div className="dashboard-grid">
@@ -35,7 +43,7 @@ export default function DashboardPage() {
 
           <div className="action-card">
             <h2>Charts & insights</h2>
-            <p>See charts for your portfolio and wallets.</p>
+            <p>See overall value and performance of your account.</p>
             <Link href="/analytics" className="btn-secondary">
               Open analytics
             </Link>

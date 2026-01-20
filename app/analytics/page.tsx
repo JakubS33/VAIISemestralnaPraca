@@ -116,7 +116,7 @@ export default function AnalyticsPage() {
             </div>
 
             <div style={{ marginTop: 6, fontSize: 18, fontWeight: 700 }}>
-              Current: {formatMoney(data.currentTotalValue, currency)}
+              Current total value: {formatMoney(data.currentTotalValue, currency)}
             </div>
 
             <div style={{ width: "100%", height: 320, marginTop: 12 }}>
@@ -194,8 +194,8 @@ export default function AnalyticsPage() {
         contentStyle={{
           borderRadius: 12,
           border: "1px solid rgba(0,0,0,0.08)",
-          background: "#020617",
-          color: "#f9fafb",
+          background: "#e3e4e7",
+          
         }}
       />
     </PieChart>
@@ -219,7 +219,7 @@ export default function AnalyticsPage() {
             <h2>Notes</h2>
             <p className="hero-card-small" style={{ marginTop: 0 }}>
               Total value is computed from live prices (CoinGecko/TwelveData) + OTHER assets values.
-              P/L is computed as (current total value - invested BUY cost basis).
+              P/L is computed as (current assets total value - invested BUY cost basis).
             </p>
           </div>
         </aside>

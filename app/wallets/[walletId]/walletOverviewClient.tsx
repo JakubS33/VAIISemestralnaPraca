@@ -364,7 +364,7 @@ export default function WalletOverviewClient({ walletId }: { walletId: string })
         </Link>
 
         <div className="wallet-detail-title">
-          <h1>Wallet: {displayWallet.name}</h1>
+          <h1>Wallet name: {displayWallet.name}</h1>
           <p>Currency: {displayWallet.currency}</p>
         </div>
 

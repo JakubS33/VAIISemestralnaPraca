@@ -96,16 +96,21 @@ export default async function HomePage() {
         <div className="hero-panel">
           <div className="hero-card">
             <p className="hero-card-label">Demo preview</p>
-            <p className="hero-card-value">€18 420</p>
-            <p className="hero-card-small">Estimated net worth</p>
+            <p className="hero-card-value">18 655€</p>
+            <p className="hero-card-small">Current estimated net worth</p>
+            <p className="hero-card-small" style={{ color: "green" }}>P/L +1500€</p>
 
             <div className="hero-card-row">
-              <span>Crypto & stocks</span>
-              <span>+€1 230 (24h)</span>
+              <span>Crypto 1205 €</span>
             </div>
             <div className="hero-card-row">
-              <span>Cash & other assets</span>
-              <span>€4 500</span>
+              <span>ETFs 15 300 €</span>
+            </div>
+            <div className="hero-card-row">
+              <span>Stocks 1900 €</span>
+            </div>
+            <div className="hero-card-row">
+              <span>other assets 250 €</span>
             </div>
             <p className="hero-card-foot">Log in to see your own numbers.</p>
           </div>
