@@ -2,17 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { SESSION_COOKIE_NAME, verifySessionPayload } from "@/lib/auth";
-import { ensureDailyWalletSnapshot } from "@/lib/walletSnapshots";
+import { ensureDailyWalletSnapshot, bratislavaDayKey } from "@/lib/walletSnapshots";
 
 type VsCurrency = "eur" | "usd";
 
 function asVsCurrency(v: string | null): VsCurrency {
   const x = (v ?? "eur").toLowerCase();
   return x === "usd" ? "usd" : "eur";
-}
-
-function utcDayKey(d: Date) {
-  return d.toISOString().slice(0, 10); // YYYY-MM-DD
 }
 
 // ------- pricing helpers (skopírované z /api/prices) -------
@@ -101,6 +97,12 @@ async function getUserIdOr401() {
   return sess.userId;
 }
 
+function addDaysUTC(d: Date, days: number) {
+  const x = new Date(d);
+  x.setUTCDate(x.getUTCDate() + days);
+  return x;
+}
+
 export async function GET(req: Request) {
   const userId = await getUserIdOr401();
   if (userId === "__FORBIDDEN_ADMIN__") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -132,9 +134,7 @@ export async function GET(req: Request) {
 
   const walletIds = wallets.map((w) => w.id);
 
-  // Ensure each wallet has an up-to-date daily snapshot so the analytics chart
-  // gets a point for "today" even when the user hasn't edited anything in > 1 day.
-  // Best-effort: if pricing APIs fail, we still want analytics to render.
+  // Ensure each wallet has a snapshot for today (Bratislava day).
   await Promise.all(
     walletIds.map(async (id) => {
       try {
@@ -157,13 +157,13 @@ export async function GET(req: Request) {
     },
   });
 
-  // 3) OTHER assets (savings, debt…)
+  // 3) OTHER assets
   const otherAssets = await prisma.walletAsset.findMany({
     where: { walletId: { in: walletIds }, kind: "OTHER" },
     select: { value: true },
   });
 
-  // 4) holdings + invested (cost basis len z BUY na assetoch)
+  // 4) holdings + invested
   const holdings = new Map<string, number>(); // assetId -> qty
   let invested = 0;
 
@@ -181,7 +181,7 @@ export async function GET(req: Request) {
     }
   }
 
-  // 5) nacitaj asset meta (typ/provider/apiId) a potom ceny
+  // 5) asset meta + ceny
   const assetIds = Array.from(holdings.keys());
   const assets = await prisma.asset.findMany({
     where: { id: { in: assetIds } },
@@ -215,10 +215,8 @@ export async function GET(req: Request) {
     if (typeof p === "number") priceByAssetId.set(x.assetId, p);
   }
 
-  // 6) current total value (main + other)
+  // 6) current totals + allocation
   let mainValue = 0;
-
-  // allocation buckets
   let vCrypto = 0, vStock = 0, vEtf = 0;
 
   for (const [assetId, qty] of holdings) {
@@ -242,12 +240,12 @@ export async function GET(req: Request) {
 
   const currentTotalValue = mainValue + otherValue;
 
-  // ✅ FIX: P/L len z assetov (mainValue - invested), OTHER sa do P/L nezapocitava
+  // P/L len z assetov (others ignorujeme)
   const overallPL = mainValue - invested;
 
-  // 7) timeSeries zo snapshotov: berieme POSLEDNY snapshot za den pre kazdu wallet
+  // 7) timeSeries zo snapshotov (carry-forward namiesto 0)
   const from = new Date();
-  from.setDate(from.getDate() - 60);
+  from.setUTCDate(from.getUTCDate() - 60);
 
   const snaps = await prisma.walletSnapshot.findMany({
     where: { walletId: { in: walletIds }, createdAt: { gte: from } },
@@ -255,31 +253,53 @@ export async function GET(req: Request) {
     orderBy: [{ walletId: "asc" }, { createdAt: "asc" }],
   });
 
-  // 7a) wallet+day -> last snapshot value
-  const lastByWalletDay = new Map<string, number>(); // key = `${walletId}|${dayKey}`
-
+  // walletId -> Map(dayKey -> last value that day)
+  const perWalletDay = new Map<string, Map<string, number>>();
   for (const s of snaps) {
     const v = Number(s.value);
     if (!Number.isFinite(v)) continue;
-    const dayKey = utcDayKey(s.createdAt);
-    const key = `${s.walletId}|${dayKey}`;
-
-    // kedze ideme ASC, posledny zapis pre dany key bude najnovsi snapshot v ten den
-    lastByWalletDay.set(key, v);
+    const dayKey = bratislavaDayKey(s.createdAt);
+    let m = perWalletDay.get(s.walletId);
+    if (!m) {
+      m = new Map<string, number>();
+      perWalletDay.set(s.walletId, m);
+    }
+    // ASC order => overwriting gives "last snapshot that day"
+    m.set(dayKey, v);
   }
 
-  // 7b) day -> sum(last snapshots across wallets)
-  const seriesMap = new Map<string, number>();
-
-  for (const [key, val] of lastByWalletDay.entries()) {
-    const dayKey = key.split("|")[1];
-    seriesMap.set(dayKey, (seriesMap.get(dayKey) ?? 0) + val);
+  // Build list of dayKeys from from..today (Bratislava day keys)
+  const today = new Date();
+  const dayKeys: string[] = [];
+  for (let i = 0; i <= 60; i++) {
+    const d = addDaysUTC(from, i);
+    const k = bratislavaDayKey(d);
+    if (dayKeys.length === 0 || dayKeys[dayKeys.length - 1] !== k) dayKeys.push(k);
   }
+  // Ensure today included
+  const todayKey = bratislavaDayKey(today);
+  if (dayKeys[dayKeys.length - 1] !== todayKey) dayKeys.push(todayKey);
 
-  const timeSeries = Array.from(seriesMap.entries()).map(([dayKey, value]) => ({
-    date: dayKey,
-    value: Number(value.toFixed(2)),
-  }));
+  // carry-forward sum
+  const lastValByWallet = new Map<string, number>();
+  const timeSeries = dayKeys.map((dayKey) => {
+    let sum = 0;
+
+    for (const wid of walletIds) {
+      const wm = perWalletDay.get(wid);
+      const v = wm?.get(dayKey);
+
+      if (typeof v === "number") {
+        lastValByWallet.set(wid, v);
+      }
+
+      const carried = lastValByWallet.get(wid);
+      if (typeof carried === "number") sum += carried;
+      // else wallet has never had a snapshot yet => contributes 0 until first appears
+    }
+
+    return { date: dayKey, value: Number(sum.toFixed(2)) };
+  });
 
   return NextResponse.json({
     vs,
@@ -292,6 +312,6 @@ export async function GET(req: Request) {
       { name: "Other", value: Number(otherValue.toFixed(2)) },
     ],
     timeSeries,
-    updatedAt: utcDayKey(new Date()),
+    updatedAt: todayKey,
   });
 }

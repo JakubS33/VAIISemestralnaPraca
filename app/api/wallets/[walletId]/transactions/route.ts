@@ -114,7 +114,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ walletId: stri
 
   // After creating a transaction, store a new wallet snapshot.
   try {
-    await createWalletSnapshot(walletId, "TX_CREATE");
+    await createWalletSnapshot(walletId, "TX_ADD");
   } catch (e) {
     console.error("[snapshot] TX_CREATE failed", e);
   }

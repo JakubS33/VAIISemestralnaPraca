@@ -7,14 +7,19 @@ function asVsCurrencyFromWalletCurrency(currency: string | null | undefined): Vs
   return x === "usd" ? "usd" : "eur";
 }
 
-function sameDayInBratislava(a: Date, b: Date): boolean {
+function bratislavaDayKey(d: Date): string {
+  // YYYY-MM-DD in Europe/Bratislava
   const fmt = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Bratislava",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   });
-  return fmt.format(a) === fmt.format(b); // YYYY-MM-DD
+  return fmt.format(d);
+}
+
+function sameDayInBratislava(a: Date, b: Date): boolean {
+  return bratislavaDayKey(a) === bratislavaDayKey(b);
 }
 
 async function fetchCoinGeckoSimplePrice(ids: string[], vs: VsCurrency): Promise<Map<string, number>> {
@@ -75,7 +80,7 @@ async function fetchTwelveDataQuote(symbols: string[], _vs: VsCurrency): Promise
     return map;
   }
 
-  // batch map { AAPL: {...}, MSFT: {...} }
+  // batch map
   if (json && typeof json === "object") {
     for (const sym of symbols) {
       const row = (json as any)[sym];
@@ -105,7 +110,6 @@ async function computeWalletValueLive(walletId: string): Promise<{ value: number
     holdings.set(t.assetId, (holdings.get(t.assetId) ?? 0) + sign * q);
   }
 
-  // keep non-zero positions
   const assetIds = Array.from(holdings.entries())
     .filter(([, qty]) => Math.abs(qty) > 1e-12)
     .map(([assetId]) => assetId);
@@ -156,16 +160,13 @@ async function computeWalletValueLive(walletId: string): Promise<{ value: number
     sum += qty * p;
   }
 
-  // two decimals snapshot
   const value = Number(sum.toFixed(2));
   return { value, currency: wallet.currency, pricedAssetCount };
 }
 
-export async function createWalletSnapshot(walletId: string, reason: "TX_ADD" | "TX_DELETE" | "EOD" | "TX_EDIT" | "TX_CREATE") {
+export async function createWalletSnapshot(walletId: string, reason: "TX_ADD" | "TX_DELETE" | "EOD" | "TX_EDIT") {
   const { value, currency, pricedAssetCount } = await computeWalletValueLive(walletId);
 
-  // If nothing could be priced (e.g. missing API ids), we still write 0 snapshot to keep timeline consistent.
-  // You can choose to skip in that case by early-return.
   await prisma.walletSnapshot.create({
     data: {
       walletId,
@@ -178,18 +179,24 @@ export async function createWalletSnapshot(walletId: string, reason: "TX_ADD" | 
   return { value, currency, pricedAssetCount };
 }
 
+/**
+ * Ensure wallet has at least one snapshot for "today" (Europe/Bratislava).
+ * We check the latest snapshot of ANY reason. If none is from today, create an EOD snapshot.
+ */
 export async function ensureDailyWalletSnapshot(walletId: string) {
-  const lastDaily = await prisma.walletSnapshot.findFirst({
-    where: { walletId, reason: "EOD" },
+  const lastAny = await prisma.walletSnapshot.findFirst({
+    where: { walletId },
     orderBy: { createdAt: "desc" },
     select: { createdAt: true },
   });
 
   const now = new Date();
-  if (lastDaily && sameDayInBratislava(lastDaily.createdAt, now)) {
+  if (lastAny && sameDayInBratislava(lastAny.createdAt, now)) {
     return { created: false };
   }
 
   await createWalletSnapshot(walletId, "EOD");
   return { created: true };
 }
+
+export { bratislavaDayKey };
