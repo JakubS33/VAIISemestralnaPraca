@@ -30,7 +30,6 @@ export default function RegisterPage() {
         return;
       }
 
-      // ✅ register nastaví cookie (auto-login)
       router.push("/wallets");
       router.refresh();
     } finally {

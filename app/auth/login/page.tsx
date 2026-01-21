@@ -20,7 +20,7 @@ export default function LoginPage() {
       const r = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // Dôležité: nech sa HttpOnly session cookie korektne uloží/posiela (aj keď máš odlišný origin)
+        
         credentials: "include",
         body: JSON.stringify({ email, password }),
       });
@@ -32,7 +32,7 @@ export default function LoginPage() {
         return;
       }
 
-      // ✅ cookie je HttpOnly → nevidíš ho v JS, ale browser ho uloží
+      
       if (j?.role === "ADMIN") router.replace("/admin");
       else router.replace("/wallets");
       router.refresh();

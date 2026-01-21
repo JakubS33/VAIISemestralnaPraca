@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+/*
+  AI generated:
+*/
 type VsCurrency = "eur" | "usd";
 
 type PriceResult = {
@@ -153,6 +156,6 @@ export async function GET(req: Request) {
     if (typeof p === "number") results.push({ assetId: x.assetId, vs, price: p, source: "twelvedata" });
   }
 
-  // Response is a list for simplicity (easy to map by assetId client-side)
+  
   return NextResponse.json({ vs, results });
 }

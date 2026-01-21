@@ -200,7 +200,7 @@ export default function TransactionsClient({ walletId }: { walletId: string }) {
         <Link href={`/wallets/${walletId}`} style={{ textDecoration: "underline" }}>
           ← Back to wallet
         </Link>
-        <h1 style={{ margin: 0 }}>Transaction history</h1>
+        <h1 style={{ margin: 0, fontSize: 24 }}>Transaction history</h1>
         <div />
       </div>
 
@@ -250,9 +250,6 @@ export default function TransactionsClient({ walletId }: { walletId: string }) {
           </button>
         </form>
 
-        <div style={{ opacity: 0.8, marginTop: 8, fontSize: 13 }}>
-          Tip: Asset ID nájdeš v DB (Prisma Studio) alebo si ho vyberáš pri “Add asset” v detaile walletu.
-        </div>
       </div>
 
       {loading ? (
