@@ -2,15 +2,6 @@
 import Link from "next/link";
 import Image from "next/image";
 
-type DemoWallet = {
-  id: string;
-  name: string;
-  value: number;
-  pnl: number;
-};
-
-
-
 
 
 export default function DashboardPage() {

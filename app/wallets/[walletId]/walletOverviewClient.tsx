@@ -50,7 +50,7 @@ export default function WalletOverviewClient({ walletId }: { walletId: string })
 
   const [wallet, setWallet] = useState<Wallet | null>(null);
 
-  // MAIN assets už NEŤAHÁME z /assets?kind=MAIN – vyrátame ich z transactions.
+  
   const [otherAssets, setOtherAssets] = useState<WalletAsset[]>([]);
   const [transactions, setTransactions] = useState<WalletTx[]>([]);
   const [snapshots, setSnapshots] = useState<WalletSnapshotRow[]>([]);
@@ -67,7 +67,7 @@ export default function WalletOverviewClient({ walletId }: { walletId: string })
   const [value, setValue] = useState(""); // OTHER value
   const [saving, setSaving] = useState(false);
 
-  // MAIN asset picker
+  // MAIN 
   const [assetQuery, setAssetQuery] = useState("");
   const [assetType, setAssetType] = useState<"CRYPTO" | "STOCK" | "ETF">("CRYPTO");
   const [suggestions, setSuggestions] = useState<CatalogAsset[]>([]);
@@ -134,7 +134,7 @@ export default function WalletOverviewClient({ walletId }: { walletId: string })
     const walletData = (await w.json()) as Wallet;
     setWallet(walletData);
 
-    // transactions = source of truth
+    // transactions 
     const t = await fetch(`/api/wallets/${encodeURIComponent(walletId)}/transactions`, {
       cache: "no-store",
       credentials: "include",
@@ -148,7 +148,7 @@ export default function WalletOverviewClient({ walletId }: { walletId: string })
     const txs = t.ok ? ((await t.json()) as WalletTx[]) : [];
     setTransactions(txs);
 
-    // snapshots for chart (server may auto-create daily snapshot if older than 1 day)
+    // snapshots po 1 dni 
     const s = await fetch(`/api/wallets/${encodeURIComponent(walletId)}/snapshots?limit=500`, {
       cache: "no-store",
       credentials: "include",

@@ -1,4 +1,5 @@
 /*
+  AI GENERATED
   Seed Asset catalog with provider-specific identifiers used for live prices.
 
   - Crypto: CoinGecko (no API key required)

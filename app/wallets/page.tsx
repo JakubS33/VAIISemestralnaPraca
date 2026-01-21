@@ -1,5 +1,5 @@
 "use client";
-
+//wallet zoznam robil AI
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -104,7 +104,7 @@ export default function WalletsPage() {
         throw new Error(j?.error ?? "Failed to delete wallet");
       }
 
-      // ak mažeš wallet, ktorá je práve v edit mode, resetni edit
+      
       setWallets((prev) => prev.filter((w) => w.id !== id));
       if (editingId === id) {
         setEditingId(null);
@@ -221,7 +221,7 @@ export default function WalletsPage() {
       <div style={{ marginTop: 30, borderBottom: "10px solid #6e1029", paddingBottom: 6 }}>
         <h2 style={{ fontSize: 20, fontWeight: 600 }}>List of your wallets</h2>
       </div>
-
+            {/* AI GENERATED */}
       <div style={{ marginTop: 18 }}>
         {loading ? (
           <div>Loading...</div>

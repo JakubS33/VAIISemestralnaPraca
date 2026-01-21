@@ -28,14 +28,13 @@ export async function middleware(req: NextRequest) {
     const role = payload?.role === "ADMIN" ? "ADMIN" : "USER";
     const path = req.nextUrl.pathname;
 
-    // /admin je iba pre ADMIN
+    
     if (path.startsWith("/admin") && role !== "ADMIN") {
       const url = req.nextUrl.clone();
       url.pathname = "/dashboard";
       return NextResponse.redirect(url);
     }
 
-    // admin nech nechodi do user časti
     if ((path.startsWith("/wallets") || path.startsWith("/dashboard")) && role === "ADMIN") {
       const url = req.nextUrl.clone();
       url.pathname = "/admin";

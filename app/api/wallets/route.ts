@@ -14,7 +14,7 @@ async function getUserIdOr401() {
 
   const sess = verifySessionPayload(token);
   if (!sess) return null;
-  // Admin je iba na správu databázy (users/assets) – nesmie používať wallet endpointy.
+  
   if (sess.role === "ADMIN") return "__FORBIDDEN_ADMIN__";
   return sess.userId;
 }
@@ -35,7 +35,6 @@ export async function GET() {
     select: {
       id: true,
       name: true,
-      // ak si currency ešte nemáš v modeli Wallet, daj preč
       currency: true,
       createdAt: true,
     },
@@ -108,7 +107,7 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: "Currency is required." }, { status: 400 });
   }
 
-  // ✅ over vlastnictvo
+  
   const wallet = await prisma.wallet.findFirst({
     where: { id, userId },
     select: { id: true },
@@ -143,7 +142,7 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "Missing id" }, { status: 400 });
   }
 
-  // ✅ over vlastnictvo
+  
   const wallet = await prisma.wallet.findFirst({
     where: { id, userId },
     select: { id: true },
